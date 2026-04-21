@@ -50,7 +50,6 @@ Ashtavinayaka Realties CRM is a live client project developed for **Ashtavinayak
 | Backend | Firebase Firestore, Firebase Auth, Firebase Storage, FCM |
 | AI / ML | Vertex AI (lead scoring), MediaPipe (face embeddings), Cloud Vision OCR |
 | Automation | WhatsApp Cloud API integration |
-| IDE | Google Antigravity IDE (VS Code-based, agent-first) |
 | Build | Gradle (Kotlin DSL) |
 
 ---
