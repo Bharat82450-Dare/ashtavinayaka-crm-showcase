@@ -6,7 +6,7 @@
 
 ## Overview
 
-Ashtavinayaka Realties CRM is a live client project developed for **Radhaswami Developers / Ashtavinayaka Realties**, Raipur, India. It is a full-featured Android application managing **6,000–7,000 real estate leads** across a structured four-tier role hierarchy, with AI-powered lead scoring, biometric client identification, and automated payment verification.
+Ashtavinayaka Realties CRM is a live client project developed for **Ashtavinayaka Realties**, Raipur, India. It is a full-featured Android application managing **6,000–7,000 real estate leads** across a structured four-tier role hierarchy, with AI-powered lead scoring, biometric client identification, and automated payment verification.
 
 > This repository serves as a public showcase. Source code is proprietary and kept private per client agreement.
 
@@ -15,7 +15,7 @@ Ashtavinayaka Realties CRM is a live client project developed for **Radhaswami D
 ## Screenshots
 
 ### Dashboard & Lead Management
-<!-- Add screenshot here -->
+
 > `[Dashboard Screenshot]`
 
 ### Role Hierarchy & Access Control
