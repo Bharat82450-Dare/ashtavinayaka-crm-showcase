@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/brand/feature-graphic-1024x500.png" width="560" alt="Ashtavinayaka ONE" />
+</p>
+
 # Ashtavinayaka ONE
 
 > An AI-powered native Android sales app built for real estate teams: leads, site visits, plot booking, payments and a live satellite plot map in one place.
@@ -96,45 +100,86 @@ Each role lands on its own home screen with live stats, quick actions and an alw
 ## Key Features
 
 **Interactive Satellite Plot Map**
-A MapLibre GL map running in a WebView with 2D, satellite and 3D views, GPS location and a nearby-places layer. Plots are coloured by live status, and tapping a plot opens its details and the booking flow through a Kotlin-to-JS bridge.
+A MapLibre GL map running in a WebView with 2D, satellite and 3D views, GPS location and a nearby-places layer. Each project ships its own plot geometry, and tapping a plot opens its details and the booking flow through a Kotlin-to-JS bridge.
 
 **Five-State Plot Status**
-Available, Reserved, Booked, Sold and Mortgage, one status per plot shared by the map, booking flow and dashboards. Admin tools allow marking plots as Sold or Mortgage, including multi-select.
+Available, Reserved, Booked, Sold and Mortgage, with a single colour and label definition shared by the map, filters and plot sheets. Only an available plot can be booked, and Admin tools handle Mark as Sold and multi-select Mortgage. Customer-facing share cards never expose internal states.
 
 **Booking & Payment Verification**
-Cash, cheque, UPI and part payments follow one flow into an Admin review queue. A minimum booking amount is validated before anything is written or sent to AI. Gemini Vision reads payment proofs and escalates edge cases to a human.
+Cash, cheque, UPI and part payments flow through one path into an Admin review queue. A ₹51,000 minimum booking amount is enforced both in the app and server-side before any AI call is made. Gemini reads payment proofs, and low-confidence results are escalated to a human instead of being auto-approved.
+
+**Cost Sheets & Reports as PDFs**
+Plot cost sheets, analytics reports and per-team performance reports are generated server-side as PDFs. Plots can also be shared from the app as cards, including through WhatsApp.
 
 **Role-Based Access Control**
-Six roles (Admin, BOD, Team Lead, Sales Partner, Sales Executive and Referral Partner), each with a scoped dashboard, data visibility and feature set. Enforced in the backend, not only hidden in the UI.
+Six roles (Admin, BOD, Team Lead, Sales Partner, Sales Executive and Referral Partner), each with a scoped dashboard, data visibility and feature set. Every record carries its full hierarchy path, and role checks run in Firestore security rules and Cloud Functions rather than only in the UI. New users register, then wait for approval.
+
+**Lead Pipeline & Transfers**
+Lead lifecycle from first contact to booking, with overdue indicators and manager nudges. Leads can be transferred between team members through a request and review flow, with oversight for BOD and a timeline of each transfer.
 
 **ASHAA: AI Sales Assistant**
-An in-app conversational assistant (Ashtavinayaka Smart Helper AI Assistant) powered by Gemini via Cloud Functions, reachable from every home screen and scoped to the signed-in user's role.
+An in-app assistant (Ashtavinayaka Smart Helper AI Assistant) backed by Gemini 2.5 Flash on Vertex AI. It runs server-side through Cloud Functions using tool calling, so API credentials never reach the device, and answers are scoped to the signed-in user's role and team. It is available from every home screen as a floating button.
 
 **Site Visits with Face Verification**
-Draft-first visit flow with geo-tagged photos, a blink check and on-device face matching to identify the salesperson and client. Visits save completely or not at all, and faces are never sent off the device for matching.
+Draft-first visit flow with geo-tagged photos, a blink liveness check and face matching using a FaceNet-512 model running on-device (ML Kit + LiteRT). Visits save completely or not at all, stale drafts are cleaned up automatically, and daily reminders nudge unfinished drafts.
 
-**Lead Pipeline & Follow-ups**
-Lead lifecycle from first contact to booking, with status tracking, overdue indicators, nudges for managers and reminders for follow-ups.
+**Reports & Analytics**
+Role-scoped analytics with drill-downs and team performance breakdowns, drawn with custom Compose Canvas charts.
 
-**Push Notifications & Call Logging**
-Role-aware FCM notifications, plus native dialer integration with structured post-call outcome logging.
+**Works Where Sales Teams Work**
+- Offline-friendly local cache (Room) with background sync
+- Home-screen widgets: today's schedule, pending tasks, quick actions
+- Quick Settings tiles to start a visit or add a lead in one tap
+- Biometric or device-credential app lock
+- FCM push notifications and native dialer integration with post-call outcome logging
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Device["Android app (Kotlin, Jetpack Compose)"]
+        UI["Compose UI\n6 role dashboards"] --> VM["ViewModels (Hilt)"]
+        VM --> Repo["Repositories"]
+        Repo --> Room[("Room cache")]
+        UI --> Map["MapLibre viewer\n(WebView + JS bridge)"]
+        UI --> Face["Face check\nML Kit + FaceNet (on-device)"]
+    end
+    Repo --> Auth["Firebase Auth"]
+    Repo --> FS[("Firestore\n+ security rules")]
+    Repo --> ST[("Cloud Storage")]
+    Repo --> CF["Cloud Functions (Node.js)"]
+    CF --> FS
+    CF --> AI["Vertex AI: Gemini 2.5 Flash\npayment OCR, ASHAA, tool calling"]
+    CF --> FCM["Cloud Messaging"]
+    FCM --> Device
+```
+
+Design choices worth calling out:
+- **Server-side AI.** All Gemini calls go through Cloud Functions, so no AI credentials ship in the app.
+- **Privileged writes on the server.** Approvals, payment verification and plot blocking run in callable functions with server-side role checks.
+- **Hierarchy on every record.** Each document embeds its Admin → BOD → TL → SP → SE path, so access rules and reports can scope to a team without extra lookups.
+- **Single source of truth for plot status.** One mapping drives map colours, filters, sheets and share cards.
 
 ---
 
 ## Tech Stack
 
 **Android**
-- Kotlin · Jetpack Compose · Material Design 3
-- MVVM + Repository pattern · Hilt · Room · DataStore
-- MapLibre GL JS in a WebView
+- Kotlin · Jetpack Compose · Material Design 3 · Navigation Compose
+- MVVM + Repository pattern · Hilt · Room · WorkManager
+- MapLibre GL JS in a WebView · Jetpack Glance (widgets) · Media3 · Coil
+- ML Kit face detection · LiteRT (TFLite) · Biometric API
+- R8 + baseline profile for release performance
 
 **Backend**
-- Firebase Auth · Firestore · Storage · Cloud Messaging
-- Cloud Functions (Node.js) for privileged operations and AI calls
+- Firebase Auth · Firestore · Cloud Storage · Cloud Messaging · Crashlytics
+- Cloud Functions (Node.js)
 
 **AI & ML**
-- Gemini via Vertex AI: payment proof OCR and the ASHAA assistant
-- ML Kit + FaceNet (LiteRT): on-device face detection and matching
+- Gemini 2.5 Flash via Vertex AI: payment proof OCR and the ASHAA assistant
+- FaceNet-512 (TFLite): on-device face matching
 
 ---
 
@@ -145,7 +190,7 @@ Role-aware FCM notifications, plus native dialer integration with structured pos
 | English | `en` |
 | Hindi | `hi` |
 
-All UI strings are resource-managed. Language follows system preference.
+Around 550 resource-managed strings in each language. Language follows system preference.
 
 ---
 
@@ -157,7 +202,7 @@ The app ships with a premium **gold-on-charcoal dark theme** reflecting the luxu
 |---|---|
 | Primary background | Deep charcoal `#1C1C1E` |
 | Accent | Gold |
-| Font styles | Modern (Plus Jakarta Sans / Baloo 2), Elegant (Cormorant Garamond / Tiro Devanagari) or System; saved across restarts |
+| Font styles | Modern (Plus Jakarta Sans / Baloo 2), Elegant (Cormorant Garamond / Tiro Devanagari) or System; the choice is remembered |
 | Icon | Adaptive launcher icon, so the logo holds up on every launcher shape |
 
 ---
